@@ -178,10 +178,11 @@ static void paint(HWND hwnd) {
             GdipDrawImageRectI(g,tiles[i],(int)(-w/2),(int)(-h/2),(int)w,(int)h); GdipRestoreGraphics(g,state);
         }
     } else rounded(g,38,140,624,314,20,0,previewHover?pink:0x30808080);
+    if(image && previewHover) rounded(g,278,272,144,46,23,0,0xffffffff);
     GdipDeleteGraphics(g);
-    text(dc,L"3:4图片快切",36,41,0,ink,0); text(dc,L"让长图，自然连起来。",37,80,2,muted,0);
+    text(dc,L"3:4图片快切",36,41,0,ink,0); text(dc,L"让小红书长图自然连起来",37,80,2,muted,0);
     if(!image) text(dc,L"点击上传，或把图片拖到这里",350,288,1,ink,1);
-    else if(previewHover) text(dc,L"点击更换图片 · 或拖入新图片",42,136,3,ink,0);
+    else if(previewHover) text(dc,L"重新上传",350,284,1,RGB(255,255,255),1);
     text(dc,status,36,501,1,ink,0);text(dc,detail,36,529,3,muted,0);
     BitBlt(out,0,0,r.right,r.bottom,dc,0,0,SRCCOPY);SelectObject(dc,old);DeleteObject(bitmap);DeleteDC(dc);EndPaint(hwnd,&ps);
 }
@@ -189,7 +190,7 @@ static void draw_button(DRAWITEMSTRUCT *d) {
     int secondary=d->CtlID==100, index=secondary?0:1, enabled=!(d->itemState&ODS_DISABLED), active=enabled&&(hover[index]||(d->itemState&ODS_SELECTED));
     HBRUSH back=CreateSolidBrush(bg);FillRect(d->hDC,&d->rcItem,back);DeleteObject(back);
     GpGraphics*g;graphics(d->hDC,&g);
-    rounded(g,1,1,118,44,12,enabled?(active?0xff292929:0xff000000):0x40000000,0);
+    rounded(g,1,1,118,44,12,enabled?(active?0xff292929:0xff000000):0xff000000,0);
     const WCHAR*label=secondary?L"上传图片":L"导出";HGDIOBJ old=SelectObject(d->hDC,fonts[1]);SIZE size;GetTextExtentPoint32W(d->hDC,label,(int)wcslen(label),&size);SelectObject(d->hDC,old);
     float tw=size.cx/scale,th=size.cy/scale;
     if(secondary)text(d->hDC,label,60-tw/2,(46-th)/2,1,RGB(41,123,87),0);

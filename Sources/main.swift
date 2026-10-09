@@ -95,10 +95,6 @@ final class CutPreview: NSView {
             text.draw(at: NSPoint(x: bounds.midX-size.width/2, y: bounds.midY-28), withAttributes: attrs)
             return
         }
-        if hovered {
-            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: ink]
-            "点击更换图片 · 或拖入新图片".draw(at: NSPoint(x: 20, y: bounds.height-18), withAttributes: attrs)
-        }
         let n = CGFloat(tiles.count)
         let h = min(300, (bounds.width-58)/(n*0.75)), w = h*0.75
         let step = w*(1-0.11*progress), total = w+step*(n-1)
@@ -118,6 +114,14 @@ final class CutPreview: NSView {
             NSBezierPath(roundedRect: r, xRadius: 5*progress, yRadius: 5*progress).addClip()
             tile.draw(in: r, from: .zero, operation: .sourceOver, fraction: 1)
             NSGraphicsContext.restoreGraphicsState()
+        }
+        if hovered {
+            let r = NSRect(x: bounds.midX-72, y: bounds.midY-23, width: 144, height: 46)
+            let outline = NSBezierPath(roundedRect: r, xRadius: 23, yRadius: 23)
+            NSColor.white.setStroke(); outline.lineWidth = 1.5; outline.stroke()
+            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 15, weight: .semibold), .foregroundColor: NSColor.white]
+            let label = "重新上传", size = label.size(withAttributes: attrs)
+            label.draw(at: NSPoint(x: bounds.midX-size.width/2, y: bounds.midY-size.height/2), withAttributes: attrs)
         }
     }
 }
@@ -184,11 +188,11 @@ final class GreenButton: NSButton {
         let active = isEnabled && (hovered || isHighlighted)
         let fill: NSColor
         if secondary { fill = active ? accent.withAlphaComponent(0.055) : NSColor.clear }
-        else { fill = isEnabled ? (active ? NSColor(calibratedWhite: 0.16, alpha: 1) : NSColor.black) : NSColor.black.withAlphaComponent(0.25) }
+        else { fill = isEnabled ? (active ? NSColor(calibratedWhite: 0.16, alpha: 1) : NSColor.black) : NSColor.black }
         fill.setFill()
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 12, yRadius: 12); path.fill()
         if secondary && active { accent.withAlphaComponent(0.35).setStroke(); path.lineWidth = 1; path.stroke() }
-        let color = isEnabled ? accent : accent.withAlphaComponent(0.6)
+        let color = accent
         let label = secondary ? "上传图片" : "导出"
         let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 14, weight: .semibold), .foregroundColor: color]
         let textSize = label.size(withAttributes: attrs)
@@ -240,7 +244,7 @@ final class App: NSObject, NSApplicationDelegate {
         root.onDrop = { [weak self] url in self?.load(url) }
         let title = NSTextField(labelWithString: "3:4图片快切")
         title.textColor = ink; title.font = .systemFont(ofSize: 25, weight: .semibold); title.frame = NSRect(x: 36, y: 492, width: 440, height: 36); root.addSubview(title)
-        let hint = NSTextField(labelWithString: "让长图，自然连起来。")
+        let hint = NSTextField(labelWithString: "让小红书长图自然连起来")
         hint.textColor = NSColor(calibratedWhite: 0.48, alpha: 1); hint.font = .systemFont(ofSize: 13); hint.frame = NSRect(x: 37, y: 466, width: 440, height: 22); root.addSubview(hint)
         root.addSubview(CutMark(frame: NSRect(x: 525,y: 481,width: 150,height: 66)))
         preview.frame = NSRect(x: 22, y: 92, width: 656, height: 348); preview.onPick = { [weak self] in self?.pick() }; root.addSubview(preview)
@@ -302,6 +306,7 @@ if CommandLine.arguments.contains("--self-test") {
     if CommandLine.arguments.count > 4, let phase = Double(CommandLine.arguments[4]) {
         for case let mark as CutMark in view.subviews { mark.timer?.invalidate(); mark.phase = CGFloat(phase) }
     }
+    if CommandLine.arguments.contains("--hover") { delegate.preview.hovered = true }
     view.displayIfNeeded()
     let bitmap = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
     view.cacheDisplay(in: view.bounds, to: bitmap)
