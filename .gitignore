@@ -1,0 +1,13 @@
+.DS_Store
+dist/
+__pycache__/
+*.pyc
+*.dSYM/
+.zig-cache/
+zig-out/
+
+# Local packaging artifacts outside versioned releases
+/staging/
+/AppIcon.iconset/
+/*.dmg
+/*.exe
