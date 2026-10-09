@@ -47,10 +47,23 @@ func export(_ cg: CGImage, to folder: URL, name: String) throws -> Layout {
     return l
 }
 
-let accent = NSColor(calibratedRed: 0.16, green: 0.48, blue: 0.34, alpha: 1)
+let accent = NSColor(calibratedRed: 232/255, green: 166/255, blue: 206/255, alpha: 1)
 let ink = NSColor(calibratedRed: 0.16, green: 0.20, blue: 0.18, alpha: 1)
 
 final class CutPreview: NSView {
+    var onPick: (() -> Void)?
+    var hovered = false
+    var tracking: NSTrackingArea?
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+        if let tracking = tracking { removeTrackingArea(tracking) }
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self, userInfo: nil)
+        addTrackingArea(area); tracking = area
+    }
+    override func mouseEntered(with event: NSEvent) { hovered = true; needsDisplay = true }
+    override func mouseExited(with event: NSEvent) { hovered = false; needsDisplay = true }
+    override func mouseDown(with event: NSEvent) { onPick?() }
+    override func resetCursorRects() { addCursorRect(bounds, cursor: .pointingHand) }
     var tiles: [NSImage] = []
     var progress: CGFloat = 1
     var timer: Timer?
@@ -73,14 +86,18 @@ final class CutPreview: NSView {
     override func draw(_ dirtyRect: NSRect) {
         guard !tiles.isEmpty else {
             let box = NSBezierPath(roundedRect: bounds.insetBy(dx: 16, dy: 24), xRadius: 22, yRadius: 22)
-            NSColor(calibratedWhite: 0.5, alpha: 0.18).setStroke(); box.setLineDash([6,6], count: 2, phase: 0); box.lineWidth = 1; box.stroke()
+            (hovered ? accent : NSColor(calibratedWhite: 0.5, alpha: 0.18)).setStroke(); box.setLineDash([6,6], count: 2, phase: 0); box.lineWidth = 1; box.stroke()
             let symbol = NSImage(systemSymbolName: "photo.on.rectangle.angled", accessibilityDescription: nil)!
             symbol.draw(in: NSRect(x: bounds.midX-24, y: bounds.midY+12, width: 48, height: 42))
-            let text = "把图片拖到这里"
+            let text = "点击上传，或把图片拖到这里"
             let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 16, weight: .medium), .foregroundColor: ink]
             let size = text.size(withAttributes: attrs)
             text.draw(at: NSPoint(x: bounds.midX-size.width/2, y: bounds.midY-28), withAttributes: attrs)
             return
+        }
+        if hovered {
+            let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 11), .foregroundColor: ink]
+            "点击更换图片 · 或拖入新图片".draw(at: NSPoint(x: 20, y: bounds.height-18), withAttributes: attrs)
         }
         let n = CGFloat(tiles.count)
         let h = min(300, (bounds.width-58)/(n*0.75)), w = h*0.75
@@ -167,11 +184,11 @@ final class GreenButton: NSButton {
         let active = isEnabled && (hovered || isHighlighted)
         let fill: NSColor
         if secondary { fill = active ? accent.withAlphaComponent(0.055) : NSColor.clear }
-        else { fill = isEnabled ? (active ? NSColor(calibratedRed: 0.10, green: 0.39, blue: 0.26, alpha: 1) : accent) : accent.withAlphaComponent(0.35) }
+        else { fill = isEnabled ? (active ? NSColor(calibratedWhite: 0.16, alpha: 1) : NSColor.black) : NSColor.black.withAlphaComponent(0.25) }
         fill.setFill()
         let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 12, yRadius: 12); path.fill()
         if secondary && active { accent.withAlphaComponent(0.35).setStroke(); path.lineWidth = 1; path.stroke() }
-        let color = secondary ? accent : NSColor.white
+        let color = isEnabled ? accent : accent.withAlphaComponent(0.6)
         let label = secondary ? "上传图片" : "导出"
         let attrs: [NSAttributedString.Key: Any] = [.font: NSFont.systemFont(ofSize: 14, weight: .semibold), .foregroundColor: color]
         let textSize = label.size(withAttributes: attrs)
@@ -226,10 +243,9 @@ final class App: NSObject, NSApplicationDelegate {
         let hint = NSTextField(labelWithString: "让长图，自然连起来。")
         hint.textColor = NSColor(calibratedWhite: 0.48, alpha: 1); hint.font = .systemFont(ofSize: 13); hint.frame = NSRect(x: 37, y: 466, width: 440, height: 22); root.addSubview(hint)
         root.addSubview(CutMark(frame: NSRect(x: 525,y: 481,width: 150,height: 66)))
-        preview.frame = NSRect(x: 22, y: 110, width: 656, height: 330); root.addSubview(preview)
-        status.frame = NSRect(x: 36, y: 86, width: 628, height: 26); status.alignment = .center; status.textColor = ink; status.font = .systemFont(ofSize: 15, weight: .medium); root.addSubview(status)
-        detail.frame = NSRect(x: 36,y: 62,width: 628,height: 22); detail.alignment = .center; detail.textColor = NSColor(calibratedWhite: 0.48, alpha: 1); detail.font = .systemFont(ofSize: 11); root.addSubview(detail)
-        let choose = GreenButton(title: "上传图片", target: self, action: #selector(pick)); choose.secondary = true; choose.isBordered = false; choose.frame = NSRect(x: 36, y: 15, width: 120, height: 46); root.addSubview(choose)
+        preview.frame = NSRect(x: 22, y: 92, width: 656, height: 348); preview.onPick = { [weak self] in self?.pick() }; root.addSubview(preview)
+        status.frame = NSRect(x: 36, y: 43, width: 490, height: 26); status.alignment = .left; status.textColor = ink; status.font = .systemFont(ofSize: 15, weight: .medium); root.addSubview(status)
+        detail.frame = NSRect(x: 36,y: 20,width: 490,height: 22); detail.alignment = .left; detail.textColor = NSColor(calibratedWhite: 0.48, alpha: 1); detail.font = .systemFont(ofSize: 11); root.addSubview(detail)
         save.target = self; save.action = #selector(write); save.isBordered = false; save.frame = NSRect(x: 544, y: 15, width: 120, height: 46); save.isEnabled = false; root.addSubview(save)
         if !CommandLine.arguments.contains("--snapshot") { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
     }

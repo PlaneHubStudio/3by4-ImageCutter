@@ -1,0 +1,2 @@
+f3de90489e3ee0f2f68becf21cdb03e329d0e9f439d5064e25756d3ab75173e6  ImageCutter-macOS.dmg
+145a13150bcddaaac17f83ef5530f808d5f356b590116e2e9577b351834874b2  ImageCutter-Windows-x64.exe

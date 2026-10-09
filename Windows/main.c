@@ -49,13 +49,13 @@ API(GdipScaleWorldTransform, (GpGraphics*,float,float,int));
 API(GdipTranslateWorldTransform, (GpGraphics*,float,float,int)); API(GdipRotateWorldTransform, (GpGraphics*,float,int));
 API(GdipSaveGraphics, (GpGraphics*,UINT*)); API(GdipRestoreGraphics, (GpGraphics*,UINT));
 
-static HWND mainWindow, uploadButton, exportButton;
+static HWND mainWindow, exportButton;
 static UINT dpi = 96; static float scale = 1;
 static GpImage *image, *tiles[3]; static CropLayout layout;
 static WCHAR source[MAX_PATH], status[160] = L"一张长图，连成一组。", detail[200] = L"自动选择两张或三张 · 每张 3:4";
-static ULONGLONG animStart, logoStart; static int hover[2]; static HFONT fonts[4];
+static ULONGLONG animStart, logoStart; static int hover[2]; static int previewHover; static HFONT fonts[4];
 static const COLORREF bg = RGB(246,248,244), ink = RGB(41,51,46), muted = RGB(122,122,122);
-static const UINT32 green = 0xff297b57;
+static const UINT32 pink = 0xffe8a6ce;
 static int px(float x) { return (int)roundf(x*scale); }
 static float clamp(float x) { return x<0?0:x>1?1:x; }
 static void rect(GpGraphics *g,float x,float y,float w,float h,UINT32 color) {
@@ -177,28 +177,29 @@ static void paint(HWND hwnd) {
             for(int j=8;j>0;j--)rounded(g,-w/2-j,-h/2+6-j,w+2*j,h+2*j,5,((UINT32)(4*p)<<24),0);
             GdipDrawImageRectI(g,tiles[i],(int)(-w/2),(int)(-h/2),(int)w,(int)h); GdipRestoreGraphics(g,state);
         }
-    } else rounded(g,38,140,624,296,20,0,0x30297b57);
+    } else rounded(g,38,140,624,314,20,0,previewHover?pink:0x30808080);
     GdipDeleteGraphics(g);
     text(dc,L"3:4图片快切",36,41,0,ink,0); text(dc,L"让长图，自然连起来。",37,80,2,muted,0);
-    if(!image) {text(dc,L"把图片拖到这里",350,278,1,ink,1);text(dc,L"或点击下方上传图片",350,310,2,muted,1);}
-    text(dc,status,350,461,1,ink,1);text(dc,detail,350,490,3,muted,1);
+    if(!image) text(dc,L"点击上传，或把图片拖到这里",350,288,1,ink,1);
+    else if(previewHover) text(dc,L"点击更换图片 · 或拖入新图片",42,136,3,ink,0);
+    text(dc,status,36,501,1,ink,0);text(dc,detail,36,529,3,muted,0);
     BitBlt(out,0,0,r.right,r.bottom,dc,0,0,SRCCOPY);SelectObject(dc,old);DeleteObject(bitmap);DeleteDC(dc);EndPaint(hwnd,&ps);
 }
 static void draw_button(DRAWITEMSTRUCT *d) {
     int secondary=d->CtlID==100, index=secondary?0:1, enabled=!(d->itemState&ODS_DISABLED), active=enabled&&(hover[index]||(d->itemState&ODS_SELECTED));
     HBRUSH back=CreateSolidBrush(bg);FillRect(d->hDC,&d->rcItem,back);DeleteObject(back);
     GpGraphics*g;graphics(d->hDC,&g);
-    rounded(g,1,1,118,44,12,secondary?(active?0x0e297b57:0):(enabled?(active?0xff196442:green):0x59297b57),secondary&&active?0x59297b57:0);
+    rounded(g,1,1,118,44,12,enabled?(active?0xff292929:0xff000000):0x40000000,0);
     const WCHAR*label=secondary?L"上传图片":L"导出";HGDIOBJ old=SelectObject(d->hDC,fonts[1]);SIZE size;GetTextExtentPoint32W(d->hDC,label,(int)wcslen(label),&size);SelectObject(d->hDC,old);
     float tw=size.cx/scale,th=size.cy/scale;
     if(secondary)text(d->hDC,label,60-tw/2,(46-th)/2,1,RGB(41,123,87),0);
     else {
-        float left=(120-(14+9+tw))/2;UINT32 color=0xffffffff;
+        float left=(120-(14+9+tw))/2;UINT32 color=pink;
         line(g,left+1,20,left+1,32,color,1.6f);line(g,left+1,32,left+13,32,color,1.6f);line(g,left+13,32,left+13,20,color,1.6f);
         line(g,left+7,25,left+7,13,color,1.6f);line(g,left+7,13,left+3,17,color,1.6f);line(g,left+7,13,left+11,17,color,1.6f);
-        text(d->hDC,label,left+23,(46-th)/2,1,RGB(255,255,255),0);
+        text(d->hDC,label,left+23,(46-th)/2,1,RGB(232,166,206),0);
     }
-    if(d->itemState&ODS_FOCUS)rounded(g,4,4,112,38,9,0,0x70297b57);
+    if(d->itemState&ODS_FOCUS)rounded(g,4,4,112,38,9,0,0xffe8a6ce);
     GdipDeleteGraphics(g);
 }
 static LRESULT CALLBACK button_proc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_PTR id,DWORD_PTR data) {
@@ -210,6 +211,15 @@ static LRESULT CALLBACK button_proc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp,UINT_
 }
 static LRESULT CALLBACK window_proc(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
     switch(msg) {
+    case WM_MOUSEMOVE: {
+        int x=GET_X_LPARAM(lp),y=GET_Y_LPARAM(lp);
+        int inside=x>=px(38)&&x<=px(662)&&y>=px(130)&&y<=px(454);
+        if(inside!=previewHover){previewHover=inside;InvalidateRect(hwnd,NULL,FALSE);}
+        TRACKMOUSEEVENT track={sizeof(track),TME_LEAVE,hwnd,0};TrackMouseEvent(&track);
+        if(inside)SetCursor(LoadCursorW(NULL,IDC_HAND));return 0;
+    }
+    case WM_MOUSELEAVE:previewHover=0;InvalidateRect(hwnd,NULL,FALSE);return 0;
+    case WM_LBUTTONUP:if(GET_X_LPARAM(lp)>=px(38)&&GET_X_LPARAM(lp)<=px(662)&&GET_Y_LPARAM(lp)>=px(130)&&GET_Y_LPARAM(lp)<=px(454))choose_image();return 0;
     case WM_PAINT:paint(hwnd);return 0;
     case WM_ERASEBKGND:return 1;
     case WM_DRAWITEM:draw_button((DRAWITEMSTRUCT*)lp);return TRUE;
@@ -230,9 +240,8 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE previous,LPWSTR args,int show) 
     DWORD style=WS_OVERLAPPED|WS_CAPTION|WS_SYSMENU|WS_MINIMIZEBOX|WS_CLIPCHILDREN;RECT rect={0,0,px(700),px(570)};AdjustWindowRect(&rect,style,FALSE);
     mainWindow=CreateWindowExW(WS_EX_ACCEPTFILES,cls.lpszClassName,L"3:4图片快切",style,CW_USEDEFAULT,CW_USEDEFAULT,rect.right-rect.left,rect.bottom-rect.top,NULL,NULL,instance,NULL);
     if(!mainWindow)return 1;
-    uploadButton=CreateWindowW(L"BUTTON",L"上传图片",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,px(36),px(514),px(120),px(46),mainWindow,(HMENU)100,instance,NULL);
     exportButton=CreateWindowW(L"BUTTON",L"导出",WS_CHILD|WS_VISIBLE|WS_TABSTOP|BS_OWNERDRAW,px(544),px(514),px(120),px(46),mainWindow,(HMENU)101,instance,NULL);
-    EnableWindow(exportButton,FALSE);SetWindowSubclass(uploadButton,button_proc,1,0);SetWindowSubclass(exportButton,button_proc,1,1);
+    EnableWindow(exportButton,FALSE);SetWindowSubclass(exportButton,button_proc,1,1);
     logoStart=GetTickCount64();SetTimer(mainWindow,1,33,NULL);ShowWindow(mainWindow,show);UpdateWindow(mainWindow);
     int argc;WCHAR**argv=CommandLineToArgvW(GetCommandLineW(),&argc);if(argv&&argc>1)load_image(argv[1]);if(argv)LocalFree(argv);
     MSG msg;while(GetMessageW(&msg,NULL,0,0)>0){if(msg.message==WM_KEYDOWN&&(GetKeyState(VK_CONTROL)&0x8000)&&msg.wParam=='O'){choose_image();continue;}if(!IsDialogMessageW(mainWindow,&msg)){TranslateMessage(&msg);DispatchMessageW(&msg);}}

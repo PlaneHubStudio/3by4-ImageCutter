@@ -13,8 +13,8 @@ PlaneHub 的轻量桌面裁图工具。拖入一张长图，自动切成两张�
 
 | 平台 | 下载 | 支持 |
 | --- | --- | --- |
-| macOS | [DMG](https://github.com/PlaneHubStudio/3by4-ImageCutter/raw/refs/heads/main/releases/v1.3.0/ImageCutter-macOS.dmg) | macOS 11+，Apple Silicon / Intel 通用 |
-| Windows | [EXE](https://github.com/PlaneHubStudio/3by4-ImageCutter/raw/refs/heads/main/releases/v1.3.0/ImageCutter-Windows-x64.exe) | Windows 10 / 11，x64，免安装 |
+| macOS | [DMG](https://github.com/PlaneHubStudio/3by4-ImageCutter/raw/refs/heads/main/releases/v1.4.0/ImageCutter-macOS.dmg) | macOS 11+，Apple Silicon / Intel 通用 |
+| Windows | [EXE](https://github.com/PlaneHubStudio/3by4-ImageCutter/raw/refs/heads/main/releases/v1.4.0/ImageCutter-Windows-x64.exe) | Windows 10 / 11，x64，免安装 |
 
 macOS 支持 JPG / PNG / HEIC / TIFF / BMP；Windows 支持 JPG / PNG / TIFF / BMP，暂不支持 HEIC。
 
@@ -32,7 +32,7 @@ Windows：下载 EXE 后直接打开。
 - `Assets/PlaneHub-logo.svg`：透明背景 Logo，字形已转路径。
 - `Assets/generate-logo.py`：将 Logo SVG 转为 Swift 和 C 的原生矢量绘制代码。
 - `Assets/AppIcon.png`、`Assets/AppIcon.icns`、`Windows/AppIcon.ico`：当前飞机图标。
-- `releases/v1.3.0/`：当前最终安装文件及 SHA-256 校验值。
+- `releases/v1.4.0/`：当前最终安装文件及 SHA-256 校验值。
 
 Logo 来源：[PlaneHub Figma 节点](https://www.figma.com/design/C7uFxoAeVmp7rQGN0HO6f0/EggPlane?node-id=219-19346)。图标由内置 imagegen 生成，提示词保存在 `Assets/icon-prompt.txt`。
 

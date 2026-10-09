@@ -15,8 +15,8 @@ cat > 'dist/staging/3比4图片快切.app/Contents/Info.plist' <<'PLIST'
 <key>CFBundleName</key><string>3比4图片快切</string>
 <key>CFBundleDisplayName</key><string>3比4图片快切</string>
 <key>CFBundlePackageType</key><string>APPL</string>
-<key>CFBundleShortVersionString</key><string>1.3</string>
-<key>CFBundleVersion</key><string>8</string>
+<key>CFBundleShortVersionString</key><string>1.4</string>
+<key>CFBundleVersion</key><string>9</string>
 <key>LSMinimumSystemVersion</key><string>11.0</string>
 <key>NSHighResolutionCapable</key><true/>
 </dict></plist>
